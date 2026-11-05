@@ -216,6 +216,13 @@ public class ShoppingSwingApp extends JFrame {
             }
         });
 
+        // Nối nút Checkout với luồng xử lý thanh toán và tạo đơn hàng.
+        checkoutBtn.addActionListener(e -> {
+            if (currentUser instanceof Customer) {
+                checkout((Customer) currentUser, tabs);
+            }
+        });
+
         // Đổi mật khẩu và đăng xuất.
         changePassBtn.addActionListener(e -> changePasswordDialog());
         logoutBtn.addActionListener(e -> cardLayout.show(mainPanel, "LOGIN"));
