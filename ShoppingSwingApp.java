@@ -8,6 +8,8 @@ import java.util.ArrayList;
  * Chỉ sử dụng các thành phần cơ bản: JFrame, JPanel, JTable, JTextArea, JButton, JOptionPane.
  */
 public class ShoppingSwingApp extends JFrame {
+    // ==================== PHẦN DÙNG CHUNG: DỮ LIỆU VÀ ĐIỀU HƯỚNG ====================
+    // Cả nhóm cần thống nhất khi thay đổi các dữ liệu dùng chung này.
     private ArrayList<User> users = new ArrayList<>();
     private ArrayList<Product> products = new ArrayList<>();
     private int nextCustomerId = 2;
@@ -18,26 +20,28 @@ public class ShoppingSwingApp extends JFrame {
     private CardLayout cardLayout = new CardLayout();
     private JPanel mainPanel = new JPanel(cardLayout);
 
-    // Các bảng và vùng hiển thị
+    // Các bảng và vùng hiển thị được sử dụng bởi nhiều chức năng.
     private DefaultTableModel productModel = new DefaultTableModel(new Object[]{"ID", "Name", "Price", "Stock"}, 0);
     private DefaultTableModel adminProductModel = new DefaultTableModel(new Object[]{"ID", "Name", "Price", "Stock"}, 0);
     private JTextArea cartArea = new JTextArea(10, 30);
     private JTextArea orderHistoryArea = new JTextArea(10, 30);
 
+    // ==================== KHỞI TẠO ỨNG DỤNG ====================
     public ShoppingSwingApp() {
-        // 1. Tạo dữ liệu mẫu
+        // Dữ liệu mẫu ban đầu.
         users.add(new Admin("A001", "admin", "admin123"));
         users.add(new Customer("C001", "quan", "123456"));
         products.add(new Product("P001", "Keyboard", 350000, 10));
         products.add(new Product("P002", "Mouse", 150000, 15));
         products.add(new Product("P003", "Headphones", 450000, 8));
 
-        // 2. Cài đặt cửa sổ chính
+        // Cấu hình cửa sổ chính.
         setTitle("Shopping Online System");
         setSize(700, 480);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
+        // Đăng ký các màn hình vào CardLayout.
         mainPanel.add(createLoginPanel(), "LOGIN");
         mainPanel.add(createCustomerPanel(), "CUSTOMER");
         mainPanel.add(createAdminPanel(), "ADMIN");
@@ -46,7 +50,10 @@ public class ShoppingSwingApp extends JFrame {
         cardLayout.show(mainPanel, "LOGIN");
     }
 
-    // ==================== 1. MÀN HÌNH ĐĂNG NHẬP & ĐĂNG KÝ ====================
+    // ============================================================================
+    // NGƯỜI 1 — TÀI KHOẢN: ĐĂNG NHẬP, ĐĂNG KÝ VÀ ĐỔI MẬT KHẨU
+    // Các lớp nghiệp vụ liên quan: User.java, Customer.java, Admin.java.
+    // ============================================================================
     private JPanel createLoginPanel() {
         JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(80, 150, 80, 150));
@@ -65,7 +72,7 @@ public class ShoppingSwingApp extends JFrame {
         panel.add(new JLabel("Demo Admin: admin / admin123"));
         panel.add(new JLabel("Demo Customer: quan / 123456"));
 
-        // Sự kiện Đăng nhập
+        // Đăng nhập và chuyển người dùng đến màn hình theo vai trò.
         loginBtn.addActionListener(e -> {
             String u = userField.getText().trim();
             String p = new String(passField.getPassword());
@@ -81,7 +88,7 @@ public class ShoppingSwingApp extends JFrame {
             JOptionPane.showMessageDialog(this, "Incorrect username or password.");
         });
 
-        // Sự kiện Đăng ký
+        // Đăng ký khách hàng mới và ngăn tên đăng nhập bị trùng.
         registerBtn.addActionListener(e -> {
             String u = userField.getText().trim();
             String p = new String(passField.getPassword());
@@ -103,84 +110,20 @@ public class ShoppingSwingApp extends JFrame {
         return panel;
     }
 
-    // ==================== 2. MÀN HÌNH KHÁCH HÀNG ====================
-    private JPanel createCustomerPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        JTable table = new JTable(productModel);
-
-        // Thanh nút bấm bên dưới cho Khách hàng
-        JPanel bottom = new JPanel(new FlowLayout());
-        JTextField qtyField = new JTextField("1", 4);
-        JButton addCartBtn = new JButton("Add to Cart");
-        JButton checkoutBtn = new JButton("Checkout");
-        JButton changePassBtn = new JButton("Change Password");
-        JButton logoutBtn = new JButton("Logout");
-
-        bottom.add(new JLabel("Qty:"));
-        bottom.add(qtyField);
-        bottom.add(addCartBtn);
-        bottom.add(checkoutBtn);
-        bottom.add(changePassBtn);
-        bottom.add(logoutBtn);
-
-        // Chia 3 tab đơn giản: Sản phẩm, Giỏ hàng, Lịch sử đơn
-        JTabbedPane tabs = new JTabbedPane();
-        cartArea.setEditable(false);
-        orderHistoryArea.setEditable(false);
-        tabs.addTab("1. Products", new JScrollPane(table));
-        tabs.addTab("2. Cart", new JScrollPane(cartArea));
-        tabs.addTab("3. Order History", new JScrollPane(orderHistoryArea));
-
-        panel.add(tabs, BorderLayout.CENTER);
-        panel.add(bottom, BorderLayout.SOUTH);
-
-        // Nút thêm vào giỏ
-        addCartBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row < 0) {
-                JOptionPane.showMessageDialog(this, "Please select a product in table!");
-                return;
-            }
-            try {
-                int qty = Integer.parseInt(qtyField.getText().trim());
-                Product prod = products.get(row);
-                ((Customer) currentUser).getCart().addProduct(prod, qty);
-                refreshData();
-                JOptionPane.showMessageDialog(this, "Added to cart!");
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
-            }
-        });
-
-        // Nút thanh toán (Checkout)
-        checkoutBtn.addActionListener(e -> {
-            Customer customer = (Customer) currentUser;
-            Cart cart = customer.getCart();
-            if (cart.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Your cart is empty.");
-                return;
-            }
-            String[] methods = {"Cash on delivery", "Bank transfer (demo)"};
-            int choice = JOptionPane.showOptionDialog(this, "Choose payment method:", "Checkout",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, methods, methods[0]);
-            if (choice < 0) return;
-
-            try {
-                Order order = checkoutService.checkout(customer, choice);
-                refreshData();
-                tabs.setSelectedIndex(2);
-                JOptionPane.showMessageDialog(this, "Order placed! ID: " + order.getId());
-            } catch (IllegalStateException ex) {
-                JOptionPane.showMessageDialog(this, "Checkout failed: " + ex.getMessage());
-            }
-        });
-
-        changePassBtn.addActionListener(e -> changePasswordDialog());
-        logoutBtn.addActionListener(e -> cardLayout.show(mainPanel, "LOGIN"));
-        return panel;
+    private void changePasswordDialog() {
+        String oldP = JOptionPane.showInputDialog(this, "Current password:");
+        String newP = JOptionPane.showInputDialog(this, "New password:");
+        if (oldP != null && newP != null && currentUser.changePassword(oldP, newP)) {
+            JOptionPane.showMessageDialog(this, "Password changed successfully!");
+        } else {
+            JOptionPane.showMessageDialog(this, "Password change failed!");
+        }
     }
 
-    // ==================== 3. MÀN HÌNH ADMIN ====================
+    // ============================================================================
+    // NGƯỜI 2 — SẢN PHẨM VÀ CHỨC NĂNG QUẢN TRỊ VIÊN
+    // Lớp nghiệp vụ liên quan: Product.java.
+    // ============================================================================
     private JPanel createAdminPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(new JScrollPane(new JTable(adminProductModel)), BorderLayout.CENTER);
@@ -199,6 +142,7 @@ public class ShoppingSwingApp extends JFrame {
         bottom.add(logoutBtn);
         panel.add(bottom, BorderLayout.SOUTH);
 
+        // Kiểm tra dữ liệu rồi thêm sản phẩm vào danh sách.
         addBtn.addActionListener(e -> {
             try {
                 String name = nameField.getText().trim();
@@ -221,7 +165,92 @@ public class ShoppingSwingApp extends JFrame {
         return panel;
     }
 
-    // ==================== 4. CẬP NHẬT DỮ LIỆU HIỂN THỊ ====================
+    // ============================================================================
+    // NGƯỜI 3 — KHÁCH HÀNG: XEM SẢN PHẨM VÀ QUẢN LÝ GIỎ HÀNG
+    // Các lớp nghiệp vụ liên quan: Cart.java, CartItem.java, Product.java.
+    // ============================================================================
+    private JPanel createCustomerPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        JTable table = new JTable(productModel);
+
+        // Các nút chức năng dành cho khách hàng.
+        JPanel bottom = new JPanel(new FlowLayout());
+        JTextField qtyField = new JTextField("1", 4);
+        JButton addCartBtn = new JButton("Add to Cart");
+        JButton checkoutBtn = new JButton("Checkout");
+        JButton changePassBtn = new JButton("Change Password");
+        JButton logoutBtn = new JButton("Logout");
+
+        bottom.add(new JLabel("Qty:"));
+        bottom.add(qtyField);
+        bottom.add(addCartBtn);
+        bottom.add(checkoutBtn);
+        bottom.add(changePassBtn);
+        bottom.add(logoutBtn);
+
+        // Các tab sản phẩm, giỏ hàng và lịch sử đơn.
+        JTabbedPane tabs = new JTabbedPane();
+        cartArea.setEditable(false);
+        orderHistoryArea.setEditable(false);
+        tabs.addTab("1. Products", new JScrollPane(table));
+        tabs.addTab("2. Cart", new JScrollPane(cartArea));
+        tabs.addTab("3. Order History", new JScrollPane(orderHistoryArea));
+        panel.add(tabs, BorderLayout.CENTER);
+        panel.add(bottom, BorderLayout.SOUTH);
+
+        // Chọn sản phẩm và thêm số lượng vào giỏ hàng.
+        addCartBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a product in table!");
+                return;
+            }
+            try {
+                int qty = Integer.parseInt(qtyField.getText().trim());
+                Product prod = products.get(row);
+                ((Customer) currentUser).getCart().addProduct(prod, qty);
+                refreshData();
+                JOptionPane.showMessageDialog(this, "Added to cart!");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            }
+        });
+
+        // Đổi mật khẩu và đăng xuất.
+        changePassBtn.addActionListener(e -> changePasswordDialog());
+        logoutBtn.addActionListener(e -> cardLayout.show(mainPanel, "LOGIN"));
+        return panel;
+    }
+
+    // ============================================================================
+    // NGƯỜI 4 — THANH TOÁN, TẠO ĐƠN HÀNG VÀ LỊCH SỬ ĐƠN
+    // Lớp nghiệp vụ liên quan: CheckoutService.java, Order.java, Payment.java.
+    // paymentChoice: 0 = Cash on delivery; 1 = Bank transfer (demo).
+    // ============================================================================
+    private void checkout(Customer customer, JTabbedPane tabs) {
+        Cart cart = customer.getCart();
+        if (cart.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Your cart is empty.");
+            return;
+        }
+
+        String[] methods = {"Cash on delivery", "Bank transfer (demo)"};
+        int choice = JOptionPane.showOptionDialog(this, "Choose payment method:", "Checkout",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, methods, methods[0]);
+        if (choice < 0) return;
+
+        try {
+            Order order = checkoutService.checkout(customer, choice);
+            refreshData();
+            tabs.setSelectedIndex(2);
+            JOptionPane.showMessageDialog(this, "Order placed! ID: " + order.getId());
+        } catch (IllegalStateException ex) {
+            JOptionPane.showMessageDialog(this, "Checkout failed: " + ex.getMessage());
+        }
+    }
+
+    // ==================== DỮ LIỆU HIỂN THỊ DÙNG CHUNG ====================
+    // Cập nhật bảng sản phẩm; phần giỏ hàng và lịch sử dùng dữ liệu của Customer.
     private void refreshData() {
         productModel.setRowCount(0);
         adminProductModel.setRowCount(0);
@@ -233,6 +262,8 @@ public class ShoppingSwingApp extends JFrame {
 
         if (currentUser instanceof Customer) {
             Customer c = (Customer) currentUser;
+
+            // Cập nhật nội dung giỏ hàng.
             StringBuilder cartText = new StringBuilder("--- YOUR CART ---\n");
             for (CartItem item : c.getCart().getItems()) {
                 cartText.append(item.getProduct().getName())
@@ -242,6 +273,7 @@ public class ShoppingSwingApp extends JFrame {
             cartText.append("Total: ").append(c.getCart().getTotal()).append(" VND");
             cartArea.setText(cartText.toString());
 
+            // Cập nhật lịch sử đơn hàng và trạng thái thanh toán.
             StringBuilder orderText = new StringBuilder("--- ORDER HISTORY ---\n");
             for (Order o : c.getOrderHistory()) {
                 orderText.append("Order ID: ").append(o.getId())
@@ -257,16 +289,7 @@ public class ShoppingSwingApp extends JFrame {
         }
     }
 
-    private void changePasswordDialog() {
-        String oldP = JOptionPane.showInputDialog(this, "Current password:");
-        String newP = JOptionPane.showInputDialog(this, "New password:");
-        if (oldP != null && newP != null && currentUser.changePassword(oldP, newP)) {
-            JOptionPane.showMessageDialog(this, "Password changed successfully!");
-        } else {
-            JOptionPane.showMessageDialog(this, "Password change failed!");
-        }
-    }
-
+    // ==================== ĐIỂM KHỞI ĐỘNG CHƯƠNG TRÌNH ====================
     public static void main(String[] args) {
         new ShoppingSwingApp().setVisible(true);
     }
