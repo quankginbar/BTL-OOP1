@@ -9,14 +9,18 @@ public class Payment implements Payable {
         this.paid = false;
     }
 
-    // Factory Method Pattern (Milestone 5): Tạo đối tượng Payment tự động theo lựa chọn
+    // Choice 0 = Cash on delivery; choice 1 = Bank transfer (demo).
     public static Payment create(int choice, double amount) {
-        if (choice == 1) {
-            return new Payment("Cash on delivery", amount);
+        switch (choice) {
+            case 0:
+                return new Payment("Cash on delivery", amount);
+            case 1:
+                Payment payment = new Payment("Bank transfer (demo)", amount);
+                payment.processPayment();
+                return payment;
+            default:
+                throw new IllegalArgumentException("Invalid payment method.");
         }
-        Payment payment = new Payment("Bank transfer (demo)", amount);
-        payment.processPayment();
-        return payment;
     }
 
     @Override

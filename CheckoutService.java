@@ -5,7 +5,8 @@ public class CheckoutService {
         if (customer == null) {
             throw new IllegalArgumentException("Customer cannot be null.");
         }
-        if (paymentChoice < 0 || paymentChoice > 1) {
+        // Match JOptionPane's option indices: 0 = Cash, 1 = Bank transfer.
+        if (paymentChoice != 0 && paymentChoice != 1) {
             throw new IllegalArgumentException("Invalid payment method.");
         }
 
